@@ -9,7 +9,10 @@ from preprocess import preprocess_text
 
 from skill_extraction import extract_skills
 
-from matcher import calculate_similarity
+from matcher import (
+    calculate_tfidf_similarity,
+    calculate_bow_similarity
+)
 
 from visualization import plot_skill_match
 
@@ -19,6 +22,23 @@ st.set_page_config(
     page_title="Resume Analyzer",
     page_icon="📄",
     layout="wide"
+)
+
+
+
+st.markdown(
+    '''
+    <style>
+    .stApp {
+        background-color: #0F172A;
+    }
+
+    h1, h2, h3 {
+        color: white;
+    }
+    </style>
+    ''',
+    unsafe_allow_html=True
 )
 
 
@@ -90,23 +110,33 @@ if uploaded_file is not None and job_description:
         )
 
 
-    # PREPROCESSING
+    # NLP PREPROCESSING
 
-    resume_cleaned = preprocess_text(resume_text)
+    resume_cleaned = preprocess_text(
+        resume_text
+    )
 
-    job_cleaned = preprocess_text(job_description)
+    job_cleaned = preprocess_text(
+        job_description
+    )
 
 
     # SKILL EXTRACTION
 
-    resume_skills = extract_skills(resume_cleaned)
+    resume_skills = extract_skills(
+        resume_cleaned
+    )
 
-    job_skills = extract_skills(job_cleaned)
+    job_skills = extract_skills(
+        job_cleaned
+    )
 
 
     # SKILL MATCHING
 
-    matched_skills = set(resume_skills).intersection(
+    matched_skills = set(
+        resume_skills
+    ).intersection(
         set(job_skills)
     )
 
@@ -114,7 +144,8 @@ if uploaded_file is not None and job_description:
     if len(job_skills) > 0:
 
         skill_score = (
-            len(matched_skills) / len(job_skills)
+            len(matched_skills)
+            / len(job_skills)
         ) * 100
 
     else:
@@ -124,7 +155,15 @@ if uploaded_file is not None and job_description:
 
     # TF-IDF SIMILARITY
 
-    similarity_score = calculate_similarity(
+    tfidf_score = calculate_tfidf_similarity(
+        resume_cleaned,
+        job_cleaned
+    )
+
+
+    # BAG OF WORDS SIMILARITY
+
+    bow_score = calculate_bow_similarity(
         resume_cleaned,
         job_cleaned
     )
@@ -137,7 +176,7 @@ if uploaded_file is not None and job_description:
     st.subheader("📊 Matching Results")
 
 
-    c1, c2 = st.columns(2)
+    c1, c2, c3 = st.columns(3)
 
 
     with c1:
@@ -154,10 +193,20 @@ if uploaded_file is not None and job_description:
 
         st.metric(
             "TF-IDF Similarity",
-            f"{similarity_score:.2f}%"
+            f"{tfidf_score:.2f}%"
         )
 
-        st.progress(similarity_score / 100)
+        st.progress(tfidf_score / 100)
+
+
+    with c3:
+
+        st.metric(
+            "Bag of Words Similarity",
+            f"{bow_score:.2f}%"
+        )
+
+        st.progress(bow_score / 100)
 
 
     st.divider()
